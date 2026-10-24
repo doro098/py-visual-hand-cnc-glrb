@@ -26,7 +26,9 @@ y un strip-chart con la historia del error horizontal y vertical.
   tornillos y drivers), `$110/$111` (velocidad máxima) y sobre todo
   `$120/$121` (aceleración): la latencia del lazo va con la aceleración
   (`dt > v²/(2·a·(N-1))` en la wiki de GRBL). Braza corto = subí `a`.
-- Cámara: la USB (`video2`), pidiendo MJPG; es la misma del otro proyecto.
+- Cámara: la USB del brazo (XZD), montada por `by-id` como `/dev/cam.brazo`
+  para que los índices de V4L2 — que cambian con cada desenchufe — no
+  importen. MJPG pedido; es la misma del otro proyecto.
 
 ## Correr
 
@@ -58,12 +60,16 @@ reanuda (la pausa manda `0x85`), `g` esqueleto, `q`/`ESC` salir.
     centro.py       centro cartesiano, ancla de la palma, error
     pid.py          el PID (puro, testeado con errores fabricados)
     grbl.py         canales seco/serial: $J=, acks, 0x85
-    renderer.py     overlay: cross, ancla, error, strip-chart
+    renderer.py     overlay: ejes, cross, ancla, error, strip-chart semi-transparente
     ventana.py      el loop
     tests/          pid, centro, grbl — corren en el host, sin hardware
 
 ## Versiones
 
 La rama de origen de este proyecto es py-visual-hands (mismo motor, misma
-ventana SDL/Wayland, mismo contenedor Debian). Las decisiones de diseño
+ventana SDL/Wayland, mismo contenedor Debian). De hecho la imagen Docker
+de acá **hereda** de `py-visual-hands-manos:latest`: trae mediapipe,
+opencv y pygame instalados, así que el build de este repo no baja
+paquetes (el pip solo agrega pyserial y pytest, ~1 MB) y reusa el
+`hand_landmarker.task` de `/modelos`. Las decisiones de diseño
 están en `docs/DECISIONES.md`.

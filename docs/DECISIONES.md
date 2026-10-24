@@ -63,6 +63,21 @@ primero, es.
 `descargar_modelos.py` de 2 checkpoints (queda 1); `NOMBRES_GESTOS`; el
 dataset y el gulp de entrenamiento. Viven en el otro repo.
 
+## La imagen hereda la hermana
+
+El Dockerfile no arma el ambiente desde cero: arranca de
+`py-visual-hands-manos:latest`, la imagen de py-visual-hands que ya tiene
+mediapipe, opencv y pygame andando (y el `hand_landmarker.task` en
+`/modelos`). El `pip install` de requirements.txt no baja lo que ya está
+satisfecho: solo agrega pyserial (se usa con el Uno) y pytest, ~1 MB en
+total. La herencia comparte capas, así que la imagen nueva pesa casi lo
+mismo que la base y no duplica disco de verdad.
+
+Escape: si algún día no existe la imagen hermana, el Dockerfile anterior
+(en `git show HEAD~1:Dockerfile`) construía desde
+`python:3.11-slim-bookworm` con todo el pip adentro — 300 MB de descarga
+que conviene tener a mano si la red lo aguanta.
+
 ## Qué falta (calibración real)
 
 Los defaults del PID (kp 60 / ki 8 / kd 0, vmax 30 mm/s, feed 600 mm/min)

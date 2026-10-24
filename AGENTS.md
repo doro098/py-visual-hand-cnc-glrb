@@ -12,14 +12,18 @@ centro, la ancla, la línea de error y un strip-chart del error.
 ## Entorno
 
 Contenedor Debian (bookworm), como en py-visual-hands: el host es Alpine con
-Python 3.14 y no hay wheels de mediapipe ni opencv para musl. El compose
+Python 3.14 y no hay wheels de mediapipe ni opencv para musl. La imagen de
+este repo hereda `py-visual-hands-manos:latest` (el ambiente ya está
+instalado, el build no baja paquetes salvo pyserial/pytest). El compose
 corre con `user: "1000:1000"` para el socket Wayland del host, con `/dev/dri`
 para que SDL escale en la Vega 8, y con los nodos de video mapeados.
 
 ## Cámara
 
-El compose arranca en la USB (`CAMARA=2`), pidiendo MJPG: sin eso el bus USB
-no llega a 30 fps.
+El compose arranca en la cámara del brazo (`CAMARA=/dev/cam.brazo`: el
+by-id del host de la XZD montado con nombre estable, entrega color),
+pidiendo MJPG: sin eso el bus USB no llega a 30 fps. Los índices de video
+cambian con cada desenchufe, la ruta `/dev/cam.brazo` no.
 
 ## Motor
 

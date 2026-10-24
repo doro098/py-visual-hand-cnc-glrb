@@ -1,40 +1,30 @@
-FROM python:3.11-slim-bookworm
+# No reinstalamos un ambiente que ya existe: py-visual-hands-manos (la
+# imagen hermana de este proyecto, mismo motor y misma ventana) trae
+# Debian + mediapipe + opencv + pygame andando, y el hand_landmarker.task
+# en /modelos. Desde esa imagen heredamos y solo copiamos el código de
+# mano-pap: el pip de abajo no baja nada nuevo, los requisitos ya están
+# satisfechos salvo pyserial (que solo se usa con el Uno enchufado) y
+# pytest, unos MB en total.
+FROM py-visual-hands-manos:latest
 
 ENV PYTHONUNBUFFERED=1 \
-    PIP_NO_CACHE_DIR=1 \
+    HOME=/tmp \
     MODELOS_DIR=/modelos
-
-# libsdl2 con soporte wayland (nativo en tu KDE) y x11 (fallback vía XWayland).
-# libgl1/libegl1 y el dri de mesa para que SDL acelere en la Vega 8.
-# libgles2 lo cargan las bindings C de MediaPipe en runtime (libGLESv2.so.2).
-# libglib2.0-0 la pide opencv al importar.
-RUN apt-get update && apt-get install -y --no-install-recommends \
-        libsdl2-2.0-0 \
-        libsdl2-image-2.0-0 \
-        libgl1 \
-        libegl1 \
-        libgles2 \
-        libgl1-mesa-dri \
-        libglib2.0-0 \
-        libsm6 \
-        libxext6 \
-        libxrender1 \
-    && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
 COPY requirements.txt .
-RUN pip install -r requirements.txt
+RUN pip install --no-cache-dir --retries 10 --timeout 120 -r requirements.txt
 
 COPY . /app
 
-# El checkpoint se baja al construir, no al arrancar: el contenedor puede
-# quedarse sin internet y la app igual levanta.
-RUN mkdir -p "$MODELOS_DIR" && python descargar_modelos.py
+# Idempotente: si el checkpoint ya está (como en la imagen hermana),
+# imprime "ya estaba" y no baja nada. Sirve si algún día se construye
+# sin la imagen hermana.
+RUN python descargar_modelos.py
 
 # Corre como el usuario del host (uid 1000) porque el socket de Wayland es
 # 755 y solo el dueño puede conectarse. Sin passwd propio, HOME=/tmp.
 USER 1000:1000
-ENV HOME=/tmp
 
 CMD ["python", "ventana.py"]

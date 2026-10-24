@@ -11,8 +11,9 @@ services:
       # que se pasa desde el host: XAUTHORITY=/run/user/1000/xauth_* up
       XAUTHORITY: ${XAUTHORITY:-/run/user/1000/xauth}
       DISPLAY: ":0"
-      # 0/1 = webcam interna, 2/3 = USB. La del brazo es una de estas.
-      CAMARA: "2"
+      # La cámara del brazo dentro del contenedor: el by-id del host
+      # montado como /dev/cam.brazo (ámbase abajo en devices).
+      CAMARA: "/dev/cam.brazo"
       ANCHO: "640"
       ALTO: "480"
       FPS: "30"
@@ -29,10 +30,14 @@ services:
       # `docker compose restart pap`, sin re-buildear la imagen.
       - ./:/app
     devices:
-      - "/dev/video0:/dev/video0"
-      - "/dev/video1:/dev/video1"
-      - "/dev/video2:/dev/video2"
-      - "/dev/video3:/dev/video3"
+      # Los nodos de video: 0/1 = XZD USB del brazo, 2/3 = interna Dell.
+      # Si la USB está desenchufada, sus nodos no existen y el create
+      # falla: la enchufa y `docker compose up -d`.
+      # La cámara del brazo, siempre la misma: el symlink by-id del host
+      # montado con un nombre estable dentro del contenedor. Los índices
+      # de video cambian con cada desenchufe; el by-id no. Si la cámara
+      # no está enchufada, el create falla: la enchufa y `up -d`.
+      - "/dev/v4l/by-id/usb-XZD_USB_Camera_200901010001-video-index0:/dev/cam.brazo"
       # GPU de la Vega 8 para que SDL escale la ventana.
       - "/dev/dri:/dev/dri"
       # El Uno con GRBL. Descomentalo cuando el brazo esté enchufado; se

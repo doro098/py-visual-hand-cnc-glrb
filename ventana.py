@@ -58,15 +58,20 @@ def _elegir_driver() -> str:
     raise SystemExit(1)
 
 
-def _abrir_camara(indice: int, ancho: int, alto: int, fps: int) -> cv2.VideoCapture:
-    """Abre la cámara pidiendo MJPG: sin eso, el bus USB no llega a los fps."""
-    cam = cv2.VideoCapture(indice)
+def _abrir_camara(camara: int | str, ancho: int, alto: int, fps: int) -> cv2.VideoCapture:
+    """Abre la cámara pidiendo MJPG: sin eso, el bus USB no llega a los fps.
+
+    `camara` es un índice o la ruta a la cámara (p. ej.
+    /dev/v4l/by-id/...). Con la ruta el lazo no depende del índice,
+    que cambia con cada desenchufe.
+    """
+    cam = cv2.VideoCapture(camara)
     cam.set(cv2.CAP_PROP_FRAME_WIDTH, ancho)
     cam.set(cv2.CAP_PROP_FRAME_HEIGHT, alto)
     cam.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*"MJPG"))
     cam.set(cv2.CAP_PROP_FPS, fps)
     if not cam.isOpened():
-        raise SystemExit(f"no se pudo abrir la cámara {indice}")
+        raise SystemExit(f"no se pudo abrir la cámara {camara}")
     return cam
 
 
@@ -74,8 +79,9 @@ def main() -> None:
     parser = argparse.ArgumentParser(
         description="La cámara, en el brazo de 2 ejes, sigue a la mano."
     )
-    parser.add_argument("--camara", type=int, default=int(os.environ.get("CAMARA", "2")),
-                        help="índice de la cámara (2 es la USB en este host)")
+    parser.add_argument("--camara", default=os.environ.get("CAMARA", "2"),
+                        help="índice de la cámara, o mejor su ruta por by-id "
+                             "(p. ej. /dev/v4l/by-id/usb-XZD...-video-index0)")
     parser.add_argument("--ancho", type=int, default=int(os.environ.get("ANCHO", "640")))
     parser.add_argument("--alto", type=int, default=int(os.environ.get("ALTO", "480")))
     parser.add_argument("--fps", type=int, default=int(os.environ.get("FPS", "30")),
@@ -104,7 +110,10 @@ def main() -> None:
     import pygame
 
     pygame.init()
-    cam = _abrir_camara(args.camara, args.ancho, args.alto, args.fps)
+    cam = _abrir_camara(
+        int(args.camara) if args.camara.isdigit() else args.camara,
+        args.ancho, args.alto, args.fps,
+    )
     ok, frame = cam.read()
     if not ok:
         raise SystemExit("la cámara no devuelve frames")

@@ -1,9 +1,11 @@
 """Dibujo mínimo sobre el frame: esqueleto, lazo y gráfica del error.
 
-La ventana ya no anima gestos: muestra el lazo. Encima del video van el
-cross del centro cartesiano, el ancla de la mano, la línea de error entre
-ambos, y abajo un strip-chart con la historia del error horizontal (ex) y
-vertical (ey) de los últimos segundos.
+La ventana ya no anima gestos: muestra el lazo. Encima del video van los
+ejes del centro cartesiano (dos líneas de punta a punta del frame), el
+cross del centro, el ancla de la mano, la línea de error entre ambos, y
+abajo un strip-chart con la historia del error horizontal (ex) y vertical
+(ey) de los últimos segundos. Nada tapa el video: la franja del gráfico
+se oscurece al 50% y las trazas van encima.
 
 Cuidado con los colores: el frame es RGB (va directo al buffer de pygame),
 así que acá "rojo" se escribe (255, 0, 0), al revés de la convención BGR
@@ -16,7 +18,6 @@ import numpy as np
 from manos.base import CONECTIVIDAD
 
 BLANCO = (255, 255, 255)
-NEGRO = (0, 0, 0)
 ROJO = (255, 0, 0)
 VERDE = (0, 255, 0)
 AMARILLO = (255, 255, 0)  # traza de ex, el error horizontal
@@ -37,9 +38,19 @@ def esqueleto(frame: np.ndarray, mano) -> None:
 
 
 def lazo(frame: np.ndarray, centro, ancla: tuple[float, float] | None) -> None:
-    """El cross del centro, la ancla de la mano y la línea de error."""
+    """El eje cartesiano del centro, el ancla de la mano y la línea de error.
+
+    Los ejes son dos líneas finas de punta a punta del frame que se cruzan
+    en el centro; el cross grueso de arriba marca el propio centro.
+    """
     alto, ancho = frame.shape[:2]
     cx, cy = round(centro.x * ancho), round(centro.y * alto)
+
+    # Ejes: finos, referencian el centro sobre todo el frame.
+    cv2.line(frame, (0, cy), (ancho - 1, cy), BLANCO, 1, cv2.LINE_AA)
+    cv2.line(frame, (cx, 0), (cx, alto - 1), BLANCO, 1, cv2.LINE_AA)
+
+    # El centro, de un vistazo: cross grueso.
     brazo = 14
     cv2.line(frame, (cx - brazo, cy), (cx + brazo, cy), BLANCO, 2, cv2.LINE_AA)
     cv2.line(frame, (cx, cy - brazo), (cx, cy + brazo), BLANCO, 2, cv2.LINE_AA)
@@ -56,12 +67,18 @@ def grafico(frame: np.ndarray, historia) -> None:
     """El strip-chart del error: una traza por eje, abajo del frame.
 
     `historia` es una deque de tuplas (ex, ey) normalizadas; la escala
-    soporta errores de hasta RADIO_ERROR por lado.
+    soporta errores de hasta RADIO_ERROR por lado. La franja va
+    semi-transparente sobre el video: se oscurece al 50%, no lo tapa.
     """
     alto, ancho = frame.shape[:2]
     panel = max(alto // 5, 60)
     y0 = alto - panel
-    cv2.rectangle(frame, (0, y0), (ancho - 1, alto - 1), NEGRO, -1)
+
+    # Transparencia barata: oscurecer la franja al 50% en vez de taparla
+    # con negro sólido. El video se sigue viendo detrás de las trazas.
+    frame[y0:alto, :] = frame[y0:alto, :] // 2
+    cv2.rectangle(frame, (0, y0), (ancho - 1, alto - 1), GRIS, 1)
+
     y_cero = y0 + panel // 2
     cv2.line(frame, (0, y_cero), (ancho - 1, y_cero), GRIS, 1)
 
