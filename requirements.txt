@@ -1,0 +1,9 @@
+# opencv-python (no headless) trae el soporte de v4l2 que usa la cámara.
+# pygame con SDL2 es el que dibuja la ventana en Wayland/X11.
+# pyserial no se importa salvo que corras con --serial (el Uno enchufado).
+numpy>=1.26
+opencv-python>=4.9
+mediapipe>=0.10
+pygame>=2.5
+pyserial>=3.5
+pytest>=8.0

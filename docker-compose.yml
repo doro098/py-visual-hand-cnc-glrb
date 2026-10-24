@@ -1,0 +1,43 @@
+services:
+  pap:
+    build: .
+    # El socket de Wayland en /run/user/1000 tiene permisos 755: solo se
+    # conecta el uid 1000, el mismo de la sesión de KDE.
+    user: "1000:1000"
+    environment:
+      XDG_RUNTIME_DIR: /run/user/1000
+      WAYLAND_DISPLAY: wayland-0
+      # Fallback x11 (XWayland). La cookie cambia en cada sesión de KDE, así
+      # que se pasa desde el host: XAUTHORITY=/run/user/1000/xauth_* up
+      XAUTHORITY: ${XAUTHORITY:-/run/user/1000/xauth}
+      DISPLAY: ":0"
+      # 0/1 = webcam interna, 2/3 = USB. La del brazo es una de estas.
+      CAMARA: "2"
+      ANCHO: "640"
+      ALTO: "480"
+      FPS: "30"
+      # Puerto del Uno con GRBL. Vacío = modo seco: imprime los $J= y el
+      # brazo no se mueve. Ejemplo real: /dev/ttyUSB0
+      GRBL_PUERTO: ""
+      # Si el brazo corre para el lado contrario al de la mano, invertí.
+      SENTIDO_X: "1"
+      SENTIDO_Y: "1"
+    volumes:
+      - /run/user/1000:/run/user/1000:ro
+      - /tmp/.X11-unix:/tmp/.X11-unix:ro
+      # El código va como volumen: editás en el host y reiniciás con
+      # `docker compose restart pap`, sin re-buildear la imagen.
+      - ./:/app
+    devices:
+      - "/dev/video0:/dev/video0"
+      - "/dev/video1:/dev/video1"
+      - "/dev/video2:/dev/video2"
+      - "/dev/video3:/dev/video3"
+      # GPU de la Vega 8 para que SDL escale la ventana.
+      - "/dev/dri:/dev/dri"
+      # El Uno con GRBL. Descomentalo cuando el brazo esté enchufado; se
+      # reinició el compose para que lo vea (restart no agrega devices).
+      # - "/dev/ttyUSB0:/dev/ttyUSB0"
+    group_add:
+      - "27"  # video
+    restart: unless-stopped
